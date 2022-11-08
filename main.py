@@ -1,17 +1,24 @@
 import requests
 import threading
 import configparser as config
-from tkinter import *
+import vlc
 
+print("Welome to StreamScribe! (version 0.0.2)")
+
+# Read config file
 config = config.ConfigParser()
 config.read("config.ini")
 url = config["settings"]["url"]
-stream = requests.get(url, stream=True)
 
-print("Welome to StreamScribe! (version 0.0.1)")
 
+# Initialize VLC
+instance = vlc.Instance()
+player=instance.media_player_new()
+media=instance.media_new(url)
+player.set_media(media)
 
 def record(stream, filename):
+    threading.Thread(target=player.play).start()
     with open(f"{filename}.mp3", "wb") as f:
         for chunk in stream.iter_content(chunk_size=1024):
             if chunk:
@@ -45,12 +52,14 @@ while True:
     choice = input("Enter a choice: ")
     if choice == "1":
         filename = input("Enter name for recording: ")
+        stream = requests.get(url, stream=True)
         thread = threading.Thread(target=record, args=(stream, filename))
         thread.start()
 
         print(f"Recording started on {url}.")
         input("Press enter to stop recording...")
         stream.close()
+        player.stop()
         print(f"Recording stopped.  File saved as {filename}.mp3")
 
     elif choice == "2":
